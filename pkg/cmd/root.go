@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"os/user"
+	"path/filepath"
+	"strings"
+
 	"github.com/kellegous/got/pkg"
 	"github.com/spf13/cobra"
 )
@@ -8,6 +12,20 @@ import (
 type rootFlags struct {
 	Dir      string
 	Platform pkg.Platform
+}
+
+func (f *rootFlags) gotDir() (string, error) {
+	dir := f.Dir
+	if !strings.HasPrefix(dir, "~/") {
+		return dir, nil
+	}
+
+	u, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(u.HomeDir, dir[2:]), nil
 }
 
 func Root() *cobra.Command {
@@ -32,7 +50,7 @@ func Root() *cobra.Command {
 		"the platform to use",
 	)
 
-	cmd.AddCommand(cmdNeed())
+	cmd.AddCommand(cmdNeed(&flags))
 	cmd.AddCommand(cmdUse())
 	return cmd
 }
