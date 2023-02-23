@@ -12,60 +12,52 @@ type DownloadOptions struct {
 	Force bool
 }
 
-func requestFor(
-	ctx context.Context,
-	version string,
-	platform *Platform,
-) (*http.Request, error) {
-	return http.NewRequestWithContext(
-		ctx,
-		http.MethodGet,
-		fmt.Sprintf("https://go.dev/gl/%s.%s-%s.tar.gz", version, platform.OS, platform.Arch),
-		nil)
-}
-
 func Download(
 	ctx context.Context,
 	gotDir string,
 	platform *Platform,
 	version string,
 	opts *DownloadOptions,
-) error {
+) (string, error) {
 	name := fmt.Sprintf("%s-%s-%s", version, platform.OS, platform.Arch)
 	dir := filepath.Join(gotDir, name)
 	if _, err := os.Stat(dir); err == nil {
 		if !opts.Force {
-			return nil
+			return name, nil
 		}
 
 		if err := os.RemoveAll(dir); err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	if err := os.Mkdir(name, 0755); err != nil {
-		return err
+	if err := os.Mkdir(dir, 0755); err != nil {
+		return "", err
 	}
 
-	url := fmt.Sprintf("https://go.dev/gl/%s.%s-%s.tar.gz", version, platform.OS, platform.Arch)
+	url := fmt.Sprintf("https://go.dev/dl/%s.%s-%s.tar.gz", version, platform.OS, platform.Arch)
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
 		url,
 		nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("http status %d: %s", res.StatusCode, url)
+		return "", fmt.Errorf("http status %d: %s", res.StatusCode, url)
 	}
 
-	return Untar(dir, res.Body)
+	if err := Untar(dir, res.Body); err != nil {
+		return "", err
+	}
+
+	return name, nil
 }

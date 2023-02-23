@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -28,6 +30,31 @@ func (f *rootFlags) gotDir() (string, error) {
 	return filepath.Join(u.HomeDir, dir[2:]), nil
 }
 
+func (f *rootFlags) ensureGotDir() (string, error) {
+	dir, err := f.gotDir()
+	if err != nil {
+		return "", err
+	}
+	if s, err := os.Stat(dir); err != nil {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return "", err
+		}
+	} else if !s.IsDir() {
+		return "", fmt.Errorf("%s: not a directory", dir)
+	}
+
+	return dir, nil
+}
+
+func (f *rootFlags) needGotDir(cmd *cobra.Command) string {
+	dir, err := f.ensureGotDir()
+	if err != nil {
+		cmd.PrintErrf("unable to access gotdir: %s", err)
+		os.Exit(1)
+	}
+	return dir
+}
+
 func Root() *cobra.Command {
 	flags := rootFlags{
 		Platform: pkg.DefaultPlatform(),
@@ -51,6 +78,6 @@ func Root() *cobra.Command {
 	)
 
 	cmd.AddCommand(cmdNeed(&flags))
-	cmd.AddCommand(cmdUse())
+	cmd.AddCommand(cmdUse(&flags))
 	return cmd
 }

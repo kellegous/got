@@ -1,12 +1,49 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"context"
+	"os"
+	"path/filepath"
 
-func cmdUse() *cobra.Command {
+	"github.com/kellegous/got/pkg"
+	"github.com/spf13/cobra"
+)
+
+func cmdUse(flags *rootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "use [flags] version",
 		Short: "Set current symlink to the given version",
 		Args:  cobra.ExactArgs(1),
-		Run:   func(cmd *cobra.Command, args []string) {},
+		Run: func(cmd *cobra.Command, args []string) {
+			gotDir := flags.needGotDir(cmd)
+			ctx := context.Background()
+
+			var versions pkg.Versions
+			norm, err := versions.Normalize(ctx, args[0])
+			if err != nil {
+				cmd.PrintErr(err)
+				os.Exit(1)
+			}
+
+			name, err := pkg.Download(
+				ctx,
+				gotDir,
+				&flags.Platform,
+				norm,
+				&pkg.DownloadOptions{},
+			)
+			if err != nil {
+				cmd.PrintErr(err)
+				os.Exit(1)
+			}
+
+			if err := os.Symlink(
+				name,
+				filepath.Join(gotDir, "current"),
+			); err != nil {
+				cmd.PrintErrln(err)
+				os.Exit(1)
+			}
+		},
 	}
 }

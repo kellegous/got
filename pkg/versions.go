@@ -6,9 +6,43 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
-func GetLatestVersion(ctx context.Context) (string, error) {
+var versionPat = regexp.MustCompile(`^(go)?(\d+)\.(\d+)\.(\d+)$`)
+
+type Versions struct {
+	latest string
+}
+
+func (v *Versions) Normalize(
+	ctx context.Context,
+	version string,
+) (string, error) {
+	var err error
+	if version == "latest" {
+		if v.latest == "" {
+			v.latest, err = getLatestVersion(ctx)
+			if err != nil {
+				return "", err
+			}
+		}
+		return v.latest, nil
+	}
+
+	if !versionPat.MatchString(version) {
+		return "", fmt.Errorf("invalid version: %s", version)
+	}
+
+	if !strings.HasPrefix(version, "go") {
+		return "go" + version, nil
+	}
+
+	return version, nil
+}
+
+func getLatestVersion(ctx context.Context) (string, error) {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,

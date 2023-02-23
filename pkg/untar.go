@@ -37,7 +37,12 @@ func Untar(dst string, r io.Reader) error {
 			return err
 		}
 
-		path := filepath.Join(dst, header.Name)
+		rel, err := filepath.Rel("go", header.Name)
+		if err != nil {
+			return err
+		}
+
+		path := filepath.Join(dst, rel)
 
 		if m := header.FileInfo().Mode(); m.IsDir() {
 			if _, err := os.Stat(path); err != nil {
