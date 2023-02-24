@@ -37,10 +37,10 @@ func cmdUse(flags *rootFlags) *cobra.Command {
 				os.Exit(1)
 			}
 
-			if err := os.Symlink(
-				name,
-				filepath.Join(gotDir, "current"),
-			); err != nil {
+			link := filepath.Join(gotDir, "current")
+			os.Remove(link)
+
+			if err := os.Symlink(name, link); err != nil {
 				cmd.PrintErrln(err)
 				os.Exit(1)
 			}
