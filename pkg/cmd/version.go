@@ -33,6 +33,8 @@ func cmdVersion() *cobra.Command {
 type buildInfo struct {
 	SHA  string
 	Time time.Time
+
+	Raw *debug.BuildInfo
 }
 
 func (i *buildInfo) Name() string {
@@ -45,7 +47,10 @@ func readBuildInfo() (*buildInfo, error) {
 		return nil, errors.New("build info unavailable")
 	}
 
-	var i buildInfo
+	i := buildInfo{
+		Raw: bi,
+	}
+
 	for _, setting := range bi.Settings {
 		switch setting.Key {
 		case "vcs.revision":
