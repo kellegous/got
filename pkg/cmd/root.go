@@ -80,5 +80,6 @@ func Root() *cobra.Command {
 	cmd.AddCommand(cmdNeed(&flags))
 	cmd.AddCommand(cmdUse(&flags))
 	cmd.AddCommand(cmdHas(&flags))
+	cmd.AddCommand(cmdVersion())
 	return cmd
 }
