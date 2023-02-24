@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 	"time"
@@ -28,12 +26,6 @@ func cmdVersion() *cobra.Command {
 			fmt.Printf("Version: %s\n", bi.SHA)
 			fmt.Printf("Name:    %s\n", bi.Name())
 			fmt.Printf("Time:    %s\n", bi.Time.Format(time.RFC3339))
-
-			b, err := json.MarshalIndent(bi.Raw, "", "  ")
-			if err != nil {
-				log.Panic(err)
-			}
-			fmt.Printf("%s\n", b)
 		},
 	}
 }
@@ -41,8 +33,6 @@ func cmdVersion() *cobra.Command {
 type buildInfo struct {
 	SHA  string
 	Time time.Time
-
-	Raw *debug.BuildInfo
 }
 
 func (i *buildInfo) Name() string {
@@ -55,10 +45,7 @@ func readBuildInfo() (*buildInfo, error) {
 		return nil, errors.New("build info unavailable")
 	}
 
-	i := buildInfo{
-		Raw: bi,
-	}
-
+	var i buildInfo
 	for _, setting := range bi.Settings {
 		switch setting.Key {
 		case "vcs.revision":
